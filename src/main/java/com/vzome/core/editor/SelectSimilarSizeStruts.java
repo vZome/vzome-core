@@ -48,6 +48,12 @@ public class SelectSimilarSizeStruts extends ChangeSelection
                 Strut strut = (Strut) man;
                 int[] offset = strut .getOffset();
                 Axis zone = symmetry .getAxis( offset );
+                if ( zone == null ) // non-standard axis for the current symmetry group
+                    // TODO: should we look in other symmetry groups? (e.g. icosahedral when current is octahedral)
+                    // or should we use symmetry group independent logic for checking if the axis is the same?
+                    // To reporoduce this bug, make 2 purple -15 struts in icosa symm, switch to octa symm, select one and then run this command on it.
+                    // It should select both of them but it doesn't with this logic.
+                    continue; // for now, at least avoid the null pointer exception, but this won't make the selection we requested. 
                 Direction orbit = zone .getOrbit();
                 if ( orbit != this .orbit )
                     continue;

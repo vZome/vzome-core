@@ -52,6 +52,7 @@ import com.vzome.core.math.Projection;
 import com.vzome.core.math.RealVector;
 import com.vzome.core.math.symmetry.Axis;
 import com.vzome.core.math.symmetry.Direction;
+import com.vzome.core.math.symmetry.IcosahedralSymmetry;
 import com.vzome.core.math.symmetry.OrbitSet;
 import com.vzome.core.math.symmetry.QuaternionicSymmetry;
 import com.vzome.core.math.symmetry.Symmetry;
@@ -67,6 +68,7 @@ import com.vzome.core.render.Colors;
 import com.vzome.core.render.RenderedModel;
 import com.vzome.core.viewing.Lights;
 import com.vzome.core.viewing.ViewModel;
+import com.vzome.core.zomic.ZomicNamingConvention;
 
 public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context, Tool .Registry
 {
@@ -851,28 +853,48 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
             buf.append( " = " );
             buf.append( FORMAT.format( norm2d ) );
 
-            if ( mField.isOrigin( offset ) )
-                return "zero length!";
-            Axis zone = symmetry .getAxis( offset );
-            
-            int[] /*AlgebraicNumber*/ len = zone .getLength( offset );
-            len = zone .getOrbit() .getLengthInUnits( len );
+            if ( mField.isOrigin( offset ) ) {
+                buf.append("\n\nlength: ZERO!");
+            } else {
+                Axis zone = symmetry .getAxis( offset );
+                if(zone != null) {
+                    buf.append( "\n\naxis: " );
+                    if(symmetry instanceof IcosahedralSymmetry ) {
+                        String axisColorName = zone.getDirection().getName();
+                        buf.append( axisColorName );
+                        ZomicNamingConvention namingConvention = new ZomicNamingConvention( (IcosahedralSymmetry) symmetry);
+                        String axisName = namingConvention.getName(zone);
+                        if((axisName != null) && ("UNKNOWN AXIS".compareToIgnoreCase(axisName) != 0)) {
+                            buf.append( " " );
+                            buf.append( axisName );
+                        }
+                    } else {
+                        String zoneDrectionName = zone.getDirection().toString();
+                        if(zoneDrectionName != null) {
+                            buf.append( zoneDrectionName );
+                        }
+                    }
+                    int[] /*AlgebraicNumber*/ len = zone .getLength( offset );
+                    len = zone .getOrbit() .getLengthInUnits( len );
 
-            buf.append( "\n\nlength in orbit units: " );
-            mField .getNumberExpression( buf, len, 0, AlgebraicField.DEFAULT_FORMAT );
-
-            if ( mField instanceof PentagonField)
-            {
-                buf.append( "\n\nlength in Zome b1 struts: " );
-                if (FORMAT instanceof DecimalFormat) {
-                    ((DecimalFormat) FORMAT) .applyPattern( "0.0000" );
+                    buf.append( "\n\nlength in orbit units: " );
+                    mField .getNumberExpression( buf, len, 0, AlgebraicField.DEFAULT_FORMAT );
                 }
-                buf.append( FORMAT.format( Math.sqrt( norm2d ) / PentagonField.B1_LENGTH ) );
+
+                if ( mField instanceof PentagonField)
+                {
+                    buf.append( "\n\nlength in Zome b1 struts: " );
+                    if (FORMAT instanceof DecimalFormat) {
+                        ((DecimalFormat) FORMAT) .applyPattern( "0.0000" );
+                    }
+                    buf.append( FORMAT.format( Math.sqrt( norm2d ) / PentagonField.B1_LENGTH ) );
+                }
             }
             return buf .toString();
         }
-        else
-        	return "PANEL"; // TODO panels
+        else {
+            return "PANEL"; // TODO panels
+        }
     }
 
 	public void undo()

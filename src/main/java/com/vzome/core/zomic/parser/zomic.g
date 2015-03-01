@@ -444,7 +444,7 @@ options {
 	caseSensitive=false;
     testLiterals=false;    // don't automatically test for literals
     k=4;                   // four characters of lookahead
-    charVocabulary='\u0003'..'\uFFFF';
+    charVocabulary='\u0003'..'\uFFFE';
 }
 
 
