@@ -28,6 +28,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import com.vzome.core.algebra.AlgebraicField;
+import com.vzome.core.algebra.AlgebraicNumber;
+import com.vzome.core.algebra.AlgebraicVector;
 import com.vzome.core.algebra.PentagonField;
 import com.vzome.core.commands.AbstractCommand;
 import com.vzome.core.commands.Command;
@@ -52,7 +54,6 @@ import com.vzome.core.math.Projection;
 import com.vzome.core.math.RealVector;
 import com.vzome.core.math.symmetry.Axis;
 import com.vzome.core.math.symmetry.Direction;
-import com.vzome.core.math.symmetry.IcosahedralSymmetry;
 import com.vzome.core.math.symmetry.OrbitSet;
 import com.vzome.core.math.symmetry.QuaternionicSymmetry;
 import com.vzome.core.math.symmetry.Symmetry;
@@ -66,9 +67,9 @@ import com.vzome.core.model.VefModelExporter;
 import com.vzome.core.render.Color;
 import com.vzome.core.render.Colors;
 import com.vzome.core.render.RenderedModel;
+import com.vzome.core.render.RenderedModel.OrbitSource;
 import com.vzome.core.viewing.Lights;
 import com.vzome.core.viewing.ViewModel;
-import com.vzome.core.zomic.ZomicNamingConvention;
 
 public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context, Tool .Registry
 {
@@ -144,7 +145,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 
 		this .mField = field;
 		this .mDerivationModel = new ModelRoot( field );
-		int[] /* AlgebraicVector */ origin = field .origin( 3 );
+		AlgebraicVector origin = field .origin( 3 );
 		this .originPoint = new FreePoint( origin, this .mDerivationModel );
 		this .failures = failures;
 		this .mXML = xml;
@@ -156,7 +157,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
         for ( int i = 0; i < symms .length; i++ ) {
             SymmetrySystem osm = new SymmetrySystem( null, symms[i], app .getColors(), app .getGeometries( symms[i] ), true );
             // one of these will be overwritten below, if we are loading from a file that has it set
-            this .symmetrySystems .put( symms[i] .getName(), osm );
+            this .symmetrySystems .put( osm .getName(), osm );
         }
 
 		if ( xml != null ) {
@@ -232,10 +233,10 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 		this .mRealizedModel .show( m );
 	}
 
-	public UndoableEdit createEdit( String name, XmlSaveFormat format )
+	public UndoableEdit createEdit( Element xml, boolean groupInSelection )
 	{
 		UndoableEdit edit = null;
-		boolean groupInSelection = format .groupingDoneInSelection(); // loading pre-2.1.2
+		String name = xml .getLocalName();
 
 		if ( "Snapshot" .equals( name ) )
 			edit = new Snapshot( -1, this );
@@ -323,8 +324,10 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 			edit = new SelectNeighbors( this.mSelection, this.mRealizedModel, groupInSelection );
 
 		else if ( "SelectSimilarSize".equals( name ) )
-			edit = new SelectSimilarSizeStruts( null, null, this .mSelection, this .mRealizedModel, this .mField );
-
+		{
+		    SymmetrySystem symmetry = (SymmetrySystem) this .symmetrySystems .get( xml .getAttribute( "symmetry" ) );
+            edit = new SelectSimilarSizeStruts( symmetry, null, null, this .mSelection, this .mRealizedModel );
+		}
 		else if ( "ValidateSelection".equals( name ) )
 			edit = new ValidateSelection( this.mSelection );
 
@@ -555,11 +558,11 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 	public RealVector getLocation( Construction target )
 	{
 		if ( target instanceof Point)
-			return mField .getRealVector( ( (Point) target ).getLocation() );
+			return ( (Point) target ).getLocation() .toRealVector();
 		else if ( target instanceof Segment )
-			return mField .getRealVector( ( (Segment) target ).getStart() );
+			return ( (Segment) target ).getStart() .toRealVector();
 		else if ( target instanceof Polygon )
-			return mField .getRealVector( ( (Polygon) target ).getVertices()[ 0 ] );
+			return ( (Polygon) target ).getVertices()[ 0 ] .toRealVector();
 		else
 			return new RealVector( 0, 0, 0 );
 	}
@@ -569,14 +572,14 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 		if ( "ball" .equals( string ) )
 		{
 	    	Point ball = mEditorModel .getCenterPoint();
-	    	return mField.getRealVector( ( (Point) ball ).getLocation() );
+	    	return ( (Point) ball ).getLocation() .toRealVector();
 		}
 		return new RealVector( 0, 0, 0 );
 	}
 
-    public void selectSimilarStruts( Direction orbit, int[] length )
+    public void selectSimilarStruts( Direction orbit, AlgebraicNumber length )
     {
-        UndoableEdit edit = new SelectSimilarSizeStruts( orbit, length, mSelection, mRealizedModel, mField );
+        UndoableEdit edit = new SelectSimilarSizeStruts( this.symmetrySystem, orbit, length, mSelection, mRealizedModel );
         this .performAndRecord( edit );
     }
     
@@ -772,10 +775,10 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
     	else if ( command.equals( "import.vef" ) || command.equals( "vef" ) )
     	{
     		Segment symmAxis = mEditorModel .getSymmetrySegment();
-    		int[] quat = ( symmAxis == null ) ? null : symmAxis.getOffset();
+    		AlgebraicVector quat = ( symmAxis == null ) ? null : symmAxis.getOffset();
     		if ( quat != null )
-    			quat = mField .scaleVector( quat, mField .createPower( - 5 ) );
-    		int[] scale = mField .createPower( 5 );
+    			quat = quat .scale( mField .createPower( - 5 ) );
+    		AlgebraicNumber scale = mField .createPower( 5 );
     		edit = new LoadVEF( mSelection, mRealizedModel, script, quat, scale, mDerivationModel );
     		this .performAndRecord( edit );
     	}
@@ -817,84 +820,63 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 
 	private static final NumberFormat FORMAT = NumberFormat .getNumberInstance( Locale .US );
 
-	public String getManifestationProperties( Manifestation man, Symmetry symmetry )
+	public String getManifestationProperties( Manifestation man, OrbitSource symmetry )
 	{
         if ( man instanceof Connector )
         {
             StringBuffer buf;
-            int[] loc = ((Connector) man) .getLocation();
+            AlgebraicVector loc = ((Connector) man) .getLocation();
 
-            System .out .println( mField .getVectorExpression( loc, AlgebraicField.EXPRESSION_FORMAT ) );
-            System .out .println( mField .getVectorExpression( loc, AlgebraicField.ZOMIC_FORMAT ) );
-            System .out .println( mField .getVectorExpression( loc, AlgebraicField.VEF_FORMAT ) );
+            System .out .println( loc .getVectorExpression( AlgebraicField.EXPRESSION_FORMAT ) );
+            System .out .println( loc .getVectorExpression( AlgebraicField.ZOMIC_FORMAT ) );
+            System .out .println( loc .getVectorExpression( AlgebraicField.VEF_FORMAT ) );
             
             buf = new StringBuffer();
             buf .append( "location: " );
-            mField .getVectorExpression( buf, loc, AlgebraicField.DEFAULT_FORMAT );
+            loc .getVectorExpression( buf, AlgebraicField.DEFAULT_FORMAT );
             return buf.toString();
         }
         else if ( man instanceof Strut ) {
             StringBuffer buf = new StringBuffer();
             buf.append( "start: " );
-            mField.getVectorExpression( buf, ( (Strut) man ).getLocation(),
-                    AlgebraicField.DEFAULT_FORMAT );
+            ( (Strut) man ).getLocation() .getVectorExpression( buf, AlgebraicField.DEFAULT_FORMAT );
             buf.append( "\n\noffset: " );
-            int[] /* AlgebraicVector */offset = ( (Strut) man ).getOffset();
+            AlgebraicVector offset = ( (Strut) man ).getOffset();
 
-            System .out .println( mField .getVectorExpression( offset, AlgebraicField.EXPRESSION_FORMAT ) );
-            System .out .println( mField .getVectorExpression( offset, AlgebraicField.ZOMIC_FORMAT ) );
-            System .out .println( mField .getVectorExpression( offset, AlgebraicField.VEF_FORMAT ) );
+            System .out .println( offset .getVectorExpression( AlgebraicField.EXPRESSION_FORMAT ) );
+            System .out .println( offset .getVectorExpression( AlgebraicField.ZOMIC_FORMAT ) );
+            System .out .println( offset .getVectorExpression( AlgebraicField.VEF_FORMAT ) );
             
-            mField.getVectorExpression( buf, offset, AlgebraicField.DEFAULT_FORMAT );
+            offset .getVectorExpression( buf, AlgebraicField.DEFAULT_FORMAT );
             buf.append( "\n\nnorm squared: " );
-            int[] normSquared = mField.dot( offset, offset );
-            double norm2d = mField .evaluateNumber( normSquared );
-            mField.getNumberExpression( buf, normSquared, 0, AlgebraicField.DEFAULT_FORMAT );
+            AlgebraicNumber normSquared = offset .dot( offset );
+            double norm2d = normSquared .evaluate();
+            normSquared .getNumberExpression( buf, AlgebraicField.DEFAULT_FORMAT );
             buf.append( " = " );
             buf.append( FORMAT.format( norm2d ) );
 
-            if ( mField.isOrigin( offset ) ) {
-                buf.append("\n\nlength: ZERO!");
-            } else {
-                Axis zone = symmetry .getAxis( offset );
-                if(zone != null) {
-                    buf.append( "\n\naxis: " );
-                    if(symmetry instanceof IcosahedralSymmetry ) {
-                        String axisColorName = zone.getDirection().getName();
-                        buf.append( axisColorName );
-                        ZomicNamingConvention namingConvention = new ZomicNamingConvention( (IcosahedralSymmetry) symmetry);
-                        String axisName = namingConvention.getName(zone);
-                        if((axisName != null) && ("UNKNOWN AXIS".compareToIgnoreCase(axisName) != 0)) {
-                            buf.append( " " );
-                            buf.append( axisName );
-                        }
-                    } else {
-                        String zoneDrectionName = zone.getDirection().toString();
-                        if(zoneDrectionName != null) {
-                            buf.append( zoneDrectionName );
-                        }
-                    }
-                    int[] /*AlgebraicNumber*/ len = zone .getLength( offset );
-                    len = zone .getOrbit() .getLengthInUnits( len );
+            if ( offset .isOrigin() )
+                return "zero length!";
+            Axis zone = symmetry .getAxis( offset );
+            
+            AlgebraicNumber len = zone .getLength( offset );
+            len = zone .getOrbit() .getLengthInUnits( len );
 
-                    buf.append( "\n\nlength in orbit units: " );
-                    mField .getNumberExpression( buf, len, 0, AlgebraicField.DEFAULT_FORMAT );
-                }
+            buf.append( "\n\nlength in orbit units: " );
+            len .getNumberExpression( buf, AlgebraicField.DEFAULT_FORMAT );
 
-                if ( mField instanceof PentagonField)
-                {
-                    buf.append( "\n\nlength in Zome b1 struts: " );
-                    if (FORMAT instanceof DecimalFormat) {
-                        ((DecimalFormat) FORMAT) .applyPattern( "0.0000" );
-                    }
-                    buf.append( FORMAT.format( Math.sqrt( norm2d ) / PentagonField.B1_LENGTH ) );
+            if ( mField instanceof PentagonField)
+            {
+                buf.append( "\n\nlength in Zome b1 struts: " );
+                if (FORMAT instanceof DecimalFormat) {
+                    ((DecimalFormat) FORMAT) .applyPattern( "0.0000" );
                 }
+                buf.append( FORMAT.format( Math.sqrt( norm2d ) / PentagonField.B1_LENGTH ) );
             }
             return buf .toString();
         }
-        else {
-            return "PANEL"; // TODO panels
-        }
+        else
+        	return "PANEL"; // TODO panels
     }
 
 	public void undo()
@@ -942,7 +924,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
         return mEditorModel .selectManifestation( target, replace );
     }
 
-    public UndoableEdit createStrut( Point point, Axis zone, int[] length )
+    public UndoableEdit createStrut( Point point, Axis zone, AlgebraicNumber length )
     {
         return new StrutCreation( point, zone, length, this .mRealizedModel );
     }
@@ -1071,7 +1053,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 	    return this .defaultView;
 	}
 
-    public void generatePolytope( String group, String renderGroup, int index, int edgesToRender, int[][] edgeScales )
+    public void generatePolytope( String group, String renderGroup, int index, int edgesToRender, AlgebraicNumber[] edgeScales )
     {
         UndoableEdit edit = new Polytope4d( mSelection, mRealizedModel, mDerivationModel, mEditorModel.getSymmetrySegment(), index, group, edgesToRender, edgeScales, renderGroup );
         this .performAndRecord( edit );
@@ -1084,7 +1066,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 
 	public Segment getPlaneAxis( Polygon panel )
 	{
-		int[][] vertices = panel.getVertices();
+		AlgebraicVector[] vertices = panel.getVertices();
 		FreePoint p0 = new FreePoint( vertices[ 0 ], this.mDerivationModel );
 		FreePoint p1 = new FreePoint( vertices[ 1 ], this.mDerivationModel );
 		FreePoint p2 = new FreePoint( vertices[ 2 ], this.mDerivationModel );
