@@ -3,18 +3,17 @@
 
 package com.vzome.core.editor;
 
-import java.util.Arrays;
 import java.util.Iterator;
 
 import org.w3c.dom.Element;
 
-import com.vzome.core.algebra.AlgebraicField;
-import com.vzome.core.commands.XmlSaveFormat;
+import com.vzome.core.algebra.AlgebraicNumber;
+import com.vzome.core.algebra.AlgebraicVector;
 import com.vzome.core.commands.Command.Failure;
+import com.vzome.core.commands.XmlSaveFormat;
 import com.vzome.core.math.DomUtils;
 import com.vzome.core.math.symmetry.Axis;
 import com.vzome.core.math.symmetry.Direction;
-import com.vzome.core.math.symmetry.Symmetry;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
@@ -22,18 +21,16 @@ import com.vzome.core.model.Strut;
 public class SelectSimilarSizeStruts extends ChangeSelection
 {
     private Direction orbit;
-    private int[] length;
+    private AlgebraicNumber length;
     private RealizedModel model;
-    private Symmetry symmetry;
-    private AlgebraicField field;
+    private SymmetrySystem symmetry;
 
-    public SelectSimilarSizeStruts( Direction orbit, int[] length,
-            Selection selection, RealizedModel model, AlgebraicField field )
+    public SelectSimilarSizeStruts( SymmetrySystem symmetry, Direction orbit, AlgebraicNumber length,
+            Selection selection, RealizedModel model )
     {
         super( selection, false );
-        this .field = field;
+        this.symmetry = symmetry;
         this .model = model;
-        this .symmetry = (orbit==null)? null : orbit .getSymmetry();
         this .orbit = orbit;
         this .length = length;
     }
@@ -46,7 +43,7 @@ public class SelectSimilarSizeStruts extends ChangeSelection
                 continue;  // hidden!
             if ( man instanceof Strut ) {
                 Strut strut = (Strut) man;
-                int[] offset = strut .getOffset();
+                AlgebraicVector offset = strut .getOffset();
                 Axis zone = symmetry .getAxis( offset );
                 if ( zone == null ) // non-standard axis for the current symmetry group
                     // TODO: should we look in other symmetry groups? (e.g. icosahedral when current is octahedral)
@@ -57,8 +54,8 @@ public class SelectSimilarSizeStruts extends ChangeSelection
                 Direction orbit = zone .getOrbit();
                 if ( orbit != this .orbit )
                     continue;
-                int[] length = zone .getLength( offset );
-                if ( Arrays .equals( length, this .length ) )
+                AlgebraicNumber length = zone .getLength( offset );
+                if ( this .length .equals( length ) )
                     select( strut );
             }
         }
@@ -84,7 +81,6 @@ public class SelectSimilarSizeStruts extends ChangeSelection
             throws Failure
     {
         length = format .parseNumber( xml, "length" );
-        symmetry = this .field .getSymmetry( xml .getAttribute( "symmetry" ) );
-        orbit = symmetry .getDirection( xml .getAttribute( "orbit" ) );
+        orbit = symmetry .getOrbits() .getDirection( xml .getAttribute( "orbit" ) );
     }
 }

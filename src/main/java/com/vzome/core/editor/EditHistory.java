@@ -502,8 +502,8 @@ public class EditHistory
         		realized .setContext( context );
         	}
         	else
-        		realized = context .createEdit( cmdName, format );
-//            System.out.print( "edit: " + cmdName );
+        		realized = context .createEdit( xml, format .groupingDoneInSelection() );
+//            System.out.println( "edit: " + num + " " + cmdName );
 
         	try {
 				EditHistory .this .listener .showCommand( xml, num );
@@ -521,9 +521,9 @@ public class EditHistory
         				EditHistory .this .insert( edit );
         			}
 
-        			public UndoableEdit createEdit( String type, XmlSaveFormat format )
+        			public UndoableEdit createEdit( Element xml, boolean groupInSelection )
         			{
-        				return context .createEdit( type, format );
+        				return context .createEdit( xml, groupInSelection );
         			}
         		} ); // this method needs to have the history, since it may migrate
 //        		System.out.println();
@@ -628,7 +628,6 @@ public class EditHistory
                 }
 
                 ++ mEditNumber;  //match the preconditions like this.redo()
-//                System.out.print( "edit number: " + mEditNumber + ";  " );
 	            edit .redo();
 	            // now the edit is realized
 	            
