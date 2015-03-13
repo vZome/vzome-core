@@ -519,6 +519,10 @@ tryAgain:
 			}
 			break;
 		}
+		case EOF_CHAR:
+		{
+			break;
+		}
 		default:
 		{
 			throw new NoViableAltForCharException((char)LA(1), getFilename(), getLine(), getColumn());
@@ -583,6 +587,7 @@ tryAgain:
 		long[] data = new long[2048];
 		data[0]=-9224L;
 		for (int i = 1; i<=1023; i++) { data[i]=-1L; }
+		data[1023] &= 0x7FFFFFFFFFFFFFFFL;   // Always Exclude EOF_CHAR('\uffff')
 		return data;
 	}
 	public static final BitSet _tokenSet_0 = new BitSet(mk_tokenSet_0());
@@ -590,6 +595,7 @@ tryAgain:
 		long[] data = new long[2048];
 		data[0]=-4398046520328L;
 		for (int i = 1; i<=1023; i++) { data[i]=-1L; }
+		data[1023] &= 0x7FFFFFFFFFFFFFFFL;   // Always Exclude EOF_CHAR('\uffff')
 		return data;
 	}
 	public static final BitSet _tokenSet_1 = new BitSet(mk_tokenSet_1());
