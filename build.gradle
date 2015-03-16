@@ -22,6 +22,15 @@ repositories {
     }
 }
 
+
+// Support for decoupled "regression" task
+sourceSets {
+    regression {
+        java.srcDir file('src/regression/java')
+    }
+}
+
+
 dependencies {
     compile     group: 'antlr',             name: 'antlr',             version:'2.7.7'
     compile     group: 'java3d',            name: 'vecmath',           version:'1.6.0-pre11'
@@ -33,7 +42,26 @@ dependencies {
     testCompile group: 'xom',               name: 'xom',               version:'1.2.5'
 
 //  antlr4      group: 'org.antlr',         name: 'antlr4',            version: '4.5'
+
+    regressionCompile sourceSets.main.output
+    regressionCompile configurations.testCompile
+    regressionCompile sourceSets.test.output
+    regressionRuntime configurations.testRuntime
 }
+
+// These tasks are used to run the vZome regression test suite
+def regressionOutputDir = new File('build/test-results/regression')
+task makeRegressionOutput << {
+    regressionOutputDir.mkdirs()
+}
+task regression(type: JavaExec, dependsOn: check) {
+    classpath = sourceSets.regression.runtimeClasspath
+    main = 'com.vzome.core.regression.TestVZomeFiles'
+    args( 'src/regression/files', 'sniff-test.vZome-files', 'build/test-results/regression/TEST-output.xml' )
+    jvmArgs( '-Xmx3048M' )
+}
+regression.dependsOn makeRegressionOutput
+
 
 jar {
     manifest {
@@ -49,3 +77,4 @@ uploadArchives {
        }
     }
 }
+
