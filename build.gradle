@@ -59,6 +59,10 @@ task regression(type: JavaExec, dependsOn: check) {
     main = 'com.vzome.core.regression.TestVZomeFiles'
     args( 'src/regression/files', 'sniff-test.vZome-files', 'build/test-results/regression/TEST-output.xml' )
     jvmArgs( '-Xmx3048M' )
+    // include optional description and group (shown by ./gradlew tasks command)
+    description = 'Runs the vZome regression test suite.'
+    group        = 'Verification'
+
 }
 regression.dependsOn makeRegressionOutput
 
