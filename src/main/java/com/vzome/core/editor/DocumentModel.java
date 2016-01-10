@@ -46,13 +46,13 @@ import com.vzome.core.construction.Polygon;
 import com.vzome.core.construction.Segment;
 import com.vzome.core.construction.SegmentCrossProduct;
 import com.vzome.core.construction.SegmentJoiningPoints;
+import com.vzome.core.editor.SelectSimilarSizeStruts.ComparisonModeEnum;
 import com.vzome.core.editor.Snapshot.SnapshotAction;
 import com.vzome.core.exporters.DaeExporter;
 import com.vzome.core.exporters.Exporter3d;
 import com.vzome.core.exporters.OpenGLExporter;
 import com.vzome.core.exporters.POVRayExporter;
 import com.vzome.core.exporters.PartGeometryExporter;
-import com.vzome.core.exporters.VRMLExporter;
 import com.vzome.core.math.DomUtils;
 import com.vzome.core.math.Projection;
 import com.vzome.core.math.RealVector;
@@ -361,7 +361,21 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 		else if ( "SelectSimilarSize".equals( name ) )
 		{
 		    SymmetrySystem symmetry = this .symmetrySystems .get( xml .getAttribute( "symmetry" ) );
-            edit = new SelectSimilarSizeStruts( symmetry, null, null, this .mSelection, this .mRealizedModel );
+            edit = new SelectSimilarSizeStruts( symmetry, this .mSelection, this .mRealizedModel, ComparisonModeEnum.SAME_LENGTH );
+		}
+		else if ( "SelectParallelStruts".equals( name ) )
+		{
+		    SymmetrySystem symmetry = this .symmetrySystems .get( xml .getAttribute( "symmetry" ) );
+            edit = new SelectSimilarSizeStruts( symmetry, this .mSelection, this .mRealizedModel, ComparisonModeEnum.PARALLEL_TO_AXIS );
+		}
+		else if ( "SelectAutomaticStruts".equals( name ) )
+		{
+		    SymmetrySystem symmetry = this .symmetrySystems .get( xml .getAttribute( "symmetry" ) );
+            edit = new SelectAutomaticStruts( symmetry, this .mSelection, this .mRealizedModel );
+		}
+		else if ( "SelectCollinear".equals( name ) )
+		{
+            edit = new SelectCollinear( this .mSelection, this .mRealizedModel, groupInSelection );
 		}
 		else if ( "ValidateSelection".equals( name ) )
 			edit = new ValidateSelection( this.mSelection );
@@ -487,6 +501,14 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
             edit = mEditorModel.unselectStruts();
         else if ( action.equals( "selectNeighbors" ) )
             edit = mEditorModel.selectNeighbors();
+        else if ( action.equals( "SelectAutomaticStruts" ) )
+            edit = mEditorModel.selectAutomaticStruts(symmetrySystem);
+        else if ( action.equals( "SelectCollinear" ) )
+            edit = mEditorModel.selectCollinear();
+        else if ( action.equals( "SelectSimilarSize" ) )
+            edit = mEditorModel.selectSimilarSizeStruts(symmetrySystem);
+        else if ( action.equals( "SelectParallelStruts" ) )
+            edit = mEditorModel.selectParallelStruts(symmetrySystem);
         else if ( action.equals( "invertSelection" ) )
             edit = mEditorModel.invertSelection();
         else if ( action.equals( "group" ) )
@@ -636,9 +658,21 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 		return new RealVector( 0, 0, 0 );
 	}
 
+    public void selectCollinear( AlgebraicVector vector1, AlgebraicVector vector2 )
+    {
+        UndoableEdit edit = new SelectCollinear( mSelection, mRealizedModel, false, vector1, vector2 );
+        this .performAndRecord( edit );
+    }
+    
+    public void selectParallelStruts( Direction orbit, Axis axis )
+    {
+        UndoableEdit edit = new SelectSimilarSizeStruts( this.symmetrySystem, mSelection, mRealizedModel, orbit, axis );
+        this .performAndRecord( edit );
+    }
+
     public void selectSimilarStruts( Direction orbit, AlgebraicNumber length )
     {
-        UndoableEdit edit = new SelectSimilarSizeStruts( this.symmetrySystem, orbit, length, mSelection, mRealizedModel );
+        UndoableEdit edit = new SelectSimilarSizeStruts( this.symmetrySystem, mSelection, mRealizedModel, orbit, length );
         this .performAndRecord( edit );
     }
     

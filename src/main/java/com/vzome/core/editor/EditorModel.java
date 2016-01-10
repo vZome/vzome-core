@@ -7,6 +7,7 @@ import com.vzome.core.commands.Command;
 import com.vzome.core.construction.Construction;
 import com.vzome.core.construction.Point;
 import com.vzome.core.construction.Segment;
+import com.vzome.core.editor.SelectSimilarSizeStruts.ComparisonModeEnum;
 import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
@@ -97,6 +98,24 @@ public class EditorModel
         else
             return new NoOp();
     }
+
+    public UndoableEdit selectAutomaticStruts(SymmetrySystem symmetry)
+    {
+        return new SelectAutomaticStruts(symmetry, mSelection, mRealized, false );
+    }
+
+    public UndoableEdit selectCollinear()
+    {
+        return new SelectCollinear(mSelection, mRealized, false );
+    }
+
+	public UndoableEdit selectSimilarSizeStruts(SymmetrySystem symmetry) {
+		return new SelectSimilarSizeStruts(symmetry, mSelection, mRealized, ComparisonModeEnum.SAME_LENGTH);
+	}
+
+	public UndoableEdit selectParallelStruts(SymmetrySystem symmetry) {
+		return new SelectSimilarSizeStruts(symmetry, mSelection, mRealized, ComparisonModeEnum.PARALLEL_TO_AXIS);
+	}
 
     public UndoableEdit invertSelection()
     {
