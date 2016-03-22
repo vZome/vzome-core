@@ -16,13 +16,34 @@ public final class AlgebraicVector implements Comparable<AlgebraicVector>
     private final AlgebraicNumber[] coordinates;
     private final AlgebraicField field;
 
-    public AlgebraicVector( AlgebraicNumber... n )
+    /**
+    * The previously used varargs constructor allowed the inadvertent and unintended generation
+    * of a 1D AlgebraicVector with no warning.
+    *
+    * Normally use either the explicit 3D or 4D constructor
+    * {@link #AlgebraicVector( AlgebraicNumber x, AlgebraicNumber y, AlgebraicNumber z )} or
+    * {@link #AlgebraicVector( AlgebraicNumber w, AlgebraicNumber x, AlgebraicNumber y, AlgebraicNumber z )},
+    * or else explicitly specify an array with: {@link #AlgebraicVector( AlgebraicNumber[] numbers )}
+    *
+    * The common 3D and 4D constructors have been optimized so they no longer require a copy loop.
+    */
+    public AlgebraicVector( AlgebraicNumber[] numbers )
     {
-        coordinates = new AlgebraicNumber[ n.length ];
-        for ( int i = 0; i < n.length; i++ ) {
-            coordinates[ i ] = n[ i ];
-        }
-        this .field = n[ 0 ] .getField();
+        coordinates = new AlgebraicNumber[ numbers.length ];
+        System.arraycopy(numbers, 0, coordinates, 0, numbers.length);
+        this .field = coordinates[ 0 ] .getField();
+    }
+
+    public AlgebraicVector( AlgebraicNumber x, AlgebraicNumber y, AlgebraicNumber z )
+    {
+        this. coordinates = new AlgebraicNumber[] { x, y, z };
+        this .field = coordinates[ 0 ] .getField();
+    }
+
+    public AlgebraicVector( AlgebraicNumber w, AlgebraicNumber x, AlgebraicNumber y, AlgebraicNumber z )
+    {
+        this. coordinates = new AlgebraicNumber[] { w, x, y, z };
+        this .field = coordinates[ 0 ] .getField();
     }
 
     public AlgebraicVector( AlgebraicField field, int dims )
