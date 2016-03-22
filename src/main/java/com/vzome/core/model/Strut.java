@@ -79,6 +79,12 @@ public class Strut extends Manifestation implements Comparable<Strut>
         return m_end1;
     }
 
+	@Override
+    public AlgebraicVector getCentroid()
+    {
+        return AlgebraicVector.getCentroid(new AlgebraicVector[] { m_end1, m_end2 });
+    }
+
     public AlgebraicVector getEnd()
     {
         return m_end2;
