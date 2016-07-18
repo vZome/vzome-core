@@ -18,6 +18,7 @@ import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.Panel;
 import com.vzome.core.model.Strut;
+import java.util.Objects;
 
 public class PlaneSelectionTool extends ChangeSelection implements Tool
 {
@@ -94,6 +95,21 @@ public class PlaneSelectionTool extends ChangeSelection implements Tool
 		}
 		return true;
 	}
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 23 * hash + Objects.hashCode(this.plane);
+        hash = 23 * hash + Objects.hashCode(this.anchor);
+        hash = 23 * hash + (this.halfSpace ? 1 : 0);
+        hash = 23 * hash + (this.boundaryOpen ? 1 : 0);
+        hash = 23 * hash + (this.above ? 1 : 0);
+        hash = 23 * hash + (this.includeBalls ? 1 : 0);
+        hash = 23 * hash + (this.includeStruts ? 1 : 0);
+        hash = 23 * hash + (this.includePanels ? 1 : 0);
+        hash = 23 * hash + (this.includePartials ? 1 : 0);
+        return hash;
+    }
 
 	@Override
 	public boolean isSticky()
