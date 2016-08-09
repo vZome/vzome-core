@@ -13,6 +13,12 @@ import com.vzome.core.algebra.BigRational;
 
 public abstract class VefParser
 {
+    // Version 7 supports:
+    // Automatic field detection (most useful when used with rational numeric format)
+    // Mix of rational and/or irrational numeric format for parsing scale and vertices
+    // Flag subclasses to use the specified scale and not introduce additional scaling after parsing.
+    public static final int VERSION_AUTO_RATIONAL = 7;
+
     public static final int VERSION_EXPLICIT_BALLS = 6;
     
     public static final int VERSION_ANY_FIELD = 5;
@@ -21,8 +27,10 @@ public abstract class VefParser
     
     private int mVersion = 0;
     
+    private boolean useActualScale = false;
+
     private transient AlgebraicField field, subfield;
-    
+
     protected abstract void startVertices( int numVertices );
     
     protected abstract void addVertex( int index, AlgebraicVector location );
@@ -57,6 +65,11 @@ public abstract class VefParser
         return this .field;
     }
     
+    public boolean usesActualScale()
+    {
+        return useActualScale;
+    }
+
     protected boolean wFirst()
     {
         return mVersion >= VERSION_W_FIRST;
@@ -73,6 +86,7 @@ public abstract class VefParser
         } catch ( NoSuchElementException e1 ) {
             throw new IllegalStateException( "VEF format error: no tokens in file data: \"" + vefData + "\"" );
         }
+        useActualScale = false;
         mVersion = 0;
         AlgebraicNumber scale = field .createAlgebraicNumber( 1, 0, 1, 0 );
         if ( token .equals( "vZome" ) ) {
@@ -103,6 +117,10 @@ public abstract class VefParser
             } catch ( NoSuchElementException e1 ) {
                 throw new IllegalStateException( "VEF format error: no tokens after \"field\"" );
             }
+            // format >= 7 can optionally "learn" the current field name or specify it.
+            if ( token .equals( "automatic" ) ) {
+                token = field .getName();
+            }
             if ( token .equals( field .getName() ) )
                 subfield = field;
             else if ( subfield == null )
@@ -116,6 +134,16 @@ public abstract class VefParser
         }
         else
             subfield = field;
+
+        // format >= 7 allows disabling subsequent scaling with keyword "actual"
+        if ( token .equals( "actual" ) ) {
+            try {
+                useActualScale = true;
+                token = tokens .nextToken();
+            } catch ( NoSuchElementException e1 ) {
+                throw new IllegalStateException( "VEF format error: no tokens after \"actual\"" );
+            }
+        }
         
         if ( token .equals( "scale" ) ) {
             try {
@@ -245,39 +273,52 @@ public abstract class VefParser
     
     private AlgebraicNumber parseIntegralNumber( String string )
     {
-        BigRational[] factors = new BigRational[ this .field .getOrder() ];
-        // strip "(" and ")", tokenize on ","
-        StringTokenizer tokens = new StringTokenizer( string .substring( 1, string .length()-1 ), "," );
-        for ( int i = subfield .getOrder() - 1; i >= 0; i-- )
-        {
-            String coord = null;
-            try {
-                coord = tokens .nextToken();
-            } catch ( NoSuchElementException e ) {
-                throw new IllegalStateException( "VEF format error: not enough coordinates for field: \"" + string + "\"" );
-            }
+        BigRational[] factors = new BigRational[this.field.getOrder()];
+        if(string.startsWith("(") && string.endsWith(")") ) {
+            // strip "(" and ")", tokenize on ","
+            StringTokenizer tokens = new StringTokenizer(string.substring(1, string.length() - 1), ",");
+            for (int i = factors.length - 1; i >= 0; i--) {
+                String coord = null;
+                try {
+                    coord = tokens.nextToken();
+                } catch (NoSuchElementException e) {
+                    throw new IllegalStateException("VEF format error: not enough coordinates for field: \"" + string + "\"");
+                }
 
-            int num = 0, denom = 1;
-            int slash = coord .indexOf( '/' );
-            if ( slash > 0 ) {
-                try {
-                    num = Integer .parseInt( coord .substring( 0, slash ) );
-                } catch ( NumberFormatException e ) {
-                    throw new RuntimeException( "VEF format error: rational numerator (\"" + coord + "\") must be an integer", e );
-                }
-                try {
-                    denom = Integer .parseInt( coord .substring( slash+1 ) );
-                } catch ( NumberFormatException e ) {
-                    throw new RuntimeException( "VEF format error: rational denominator (\"" + coord + "\") must be an integer", e );
-                }
-            } else
-                try {
-                    num = Integer .parseInt( coord );
-                } catch ( NumberFormatException e ) {
-                    throw new RuntimeException( "VEF format error: coordinate value (\"" + coord + "\") must be an integer or rational", e );
-                }
-            factors[ i ] = new BigRational( num, denom );
+                factors[i] = parseRationalNumber(coord);
+            }
+            return this.field.createAlgebraicNumber(factors);
+        } else {
+            // format >= 7 supports the rational numeric format which expects no irrational factors,
+            // so there are no parentheses or commas, but still the optional "/" if a denominator is specified.
+            factors[0] = parseRationalNumber( string );
+            // count on createAlgebraicNumber to set all of the null irrational factors to zero
         }
-        return this .field .createAlgebraicNumber( factors );
+        return this.field.createAlgebraicNumber(factors);
+    }
+
+    private BigRational parseRationalNumber( String coord )
+    {
+        int num = 0, denom = 1;
+        int slash = coord .indexOf( '/' );
+        if ( slash > 0 ) {
+            try {
+                num = Integer .parseInt( coord .substring( 0, slash ) );
+            } catch ( NumberFormatException e ) {
+                throw new RuntimeException( "VEF format error: rational numerator (\"" + coord + "\") must be an integer", e );
+            }
+            try {
+                denom = Integer .parseInt( coord .substring( slash+1 ) );
+            } catch ( NumberFormatException e ) {
+                throw new RuntimeException( "VEF format error: rational denominator (\"" + coord + "\") must be an integer", e );
+            }
+        } else {
+            try {
+                num = Integer .parseInt( coord );
+            } catch ( NumberFormatException e ) {
+                throw new RuntimeException( "VEF format error: coordinate value (\"" + coord + "\") must be an integer or rational", e );
+            }
+        }
+        return new BigRational( num, denom );
     }
 }
