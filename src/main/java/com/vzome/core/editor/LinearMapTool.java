@@ -3,7 +3,6 @@
 
 package com.vzome.core.editor;
 
-
 import com.vzome.core.construction.ChangeOfBasis;
 import com.vzome.core.construction.Point;
 import com.vzome.core.construction.Segment;
@@ -51,50 +50,55 @@ public class LinearMapTool extends TransformationTool
 
     protected String checkSelection( boolean prepareTool )
     {
-        Segment[] oldBasis = new Segment[3];
-        Segment[] newBasis = new Segment[3];
-        int index = 0;
-        boolean correct = true;
-        Point center = null;
-        for (Manifestation man : mSelection) {
-        	if ( prepareTool )
-        		unselect( man );
-            if ( man instanceof Connector )
-            {
-                if ( center != null )
-                {
-                    correct = false;
-                    break;
+        {
+            // This first part is called every time the selection changes,
+            // so it should be optimized to fail ASAP
+            // and to not do any more work than necessary to validate the selection.
+            // All validation should occur before any real work is done
+            final String errMsg = "linear map tool requires three adjacent, non-parallel struts (or two sets of three) and a single (optional) center ball";
+            int balls = 0;
+            int struts = 0;
+            for (Manifestation man : mSelection) {
+                if (man instanceof Connector) {
+                    if((++balls) > 1)
+                        return errMsg;
+                } else if (man instanceof Strut) {
+                    if((++struts) > 6 )
+                        return errMsg;
                 }
-                center = (Point) ((Connector) man) .getConstructions() .next();
             }
-            else if ( man instanceof Strut )
-            {
-                if ( index >= 6 ) {
-                    correct = false;
-                    break;
-                }
-                if ( index / 3 == 0 )
-                {
-                    oldBasis[ index % 3 ] = (Segment) man .getConstructions() .next();
-                }
-                else
-                {
-                    newBasis[ index % 3 ] = (Segment) man .getConstructions() .next();
-                }
-                ++index;
+            if (struts != 3 && struts != 6) {
+                return errMsg;
             }
         }
-        
-        correct = correct && ( ( index == 3) || ( index == 6 ) );
-        if ( !correct )
-            return "linear map tool requires three adjacent, non-parallel struts (or two sets of three) and a single (optional) center ball";
 
         if ( prepareTool ) {
+            // we know we have the right number of inputs,
+            // so 're actually going to do the real work now...
+            Segment[] oldBasis = new Segment[3];
+            Segment[] newBasis = new Segment[3];
+            Point center = null;
+            int struts = 0;
+            for (Manifestation man : mSelection) {
+                unselect(man);
+                if (man instanceof Connector) {
+                    center = (Point) man.getConstructions().next();
+                } else if (man instanceof Strut) {
+                    Segment segment = (Segment) man.getConstructions().next();
+                    if (struts < 3) {
+                        oldBasis[struts] = segment;
+                    } else {
+                        newBasis[struts - 3] = segment;
+                    }
+                    ++struts;
+                }
+            }
+            // TODO: Should we call redo() to commit all of the unselects?
+
         	if ( center == null )
         		center = this.originPoint;
         	this .transforms = new Transformation[ 1 ];
-        	if ( index == 6 )
+        	if ( struts == 6 )
         		transforms[ 0 ] = new ChangeOfBasis( oldBasis, newBasis, center );
         	else
         		transforms[ 0 ] = new ChangeOfBasis( oldBasis[ 0 ], oldBasis[ 1 ], oldBasis[ 2 ], center, originalScaling );
