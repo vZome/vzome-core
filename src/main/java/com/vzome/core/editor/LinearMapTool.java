@@ -67,7 +67,7 @@ public class LinearMapTool extends TransformationTool
             if( evt.getPropertyName().equals("selection.counts") ) {
                 Object newValue = evt.getNewValue();
                 if(newValue instanceof ManifestationCounts ) {
-                    ManifestationCounts counter = ManifestationCounts.class.cast(newValue);
+                    final ManifestationCounts counter = ManifestationCounts.class.cast(newValue);
                     boolean wasEnabled = this .enabled;
                     if ( counter.balls() <= 1 && counter.panels() == 0 
                         && ( counter.struts() == 3 || counter.struts() == 6 ) )

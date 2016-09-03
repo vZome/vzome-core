@@ -35,6 +35,43 @@ public class ManifestationCountAggregator extends Aggregator implements Manifest
             return panels;
         }
 
+        public int total() {
+            return balls + struts + panels;
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 5;
+            hash = 11 * hash + this.balls;
+            hash = 11 * hash + this.struts;
+            hash = 11 * hash + this.panels;
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final ManifestationCounts other = (ManifestationCounts) obj;
+            if (this.balls != other.balls) {
+                return false;
+            }
+            if (this.struts != other.struts) {
+                return false;
+            }
+            if (this.panels != other.panels) {
+                return false;
+            }
+            return true;
+        }
+
         @Override
         public String toString() {
             return String.format("%1$d balls, %2$d struts, %3$d panels", balls, struts, panels );
@@ -92,7 +129,8 @@ public class ManifestationCountAggregator extends Aggregator implements Manifest
 			counts.struts--;
 		else if ( m instanceof Panel )
 			counts.panels--;
-        notifyListeners();    }
+        notifyListeners();
+    }
 
     @Override
     public void manifestationColored(Manifestation m, Color color) {} // ignore
