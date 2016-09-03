@@ -67,6 +67,7 @@ import com.vzome.core.model.Panel;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
 import com.vzome.core.model.VefModelExporter;
+import com.vzome.core.monitor.ManifestationCountAggregator;
 import com.vzome.core.render.Color;
 import com.vzome.core.render.Colors;
 import com.vzome.core.render.RenderedModel;
@@ -127,7 +128,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 
 	private final Lights sceneLighting;
 
-	private SelectionSummary selectionSummary;
+	private ManifestationCountAggregator selectionAggregator;
 
     public void addPropertyChangeListener( PropertyChangeListener listener )
     {
@@ -166,8 +167,10 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
 		this .mRealizedModel = new RealizedModel( field, new Projection.Default( field ) );
 		
 		this .mSelection = new Selection();
-		this .selectionSummary = new SelectionSummary( this .mSelection );
-		this .selectionSummary .addListener( new LinearMapTool.Factory( this .mSelection ) );
+		this .selectionAggregator = new ManifestationCountAggregator( "selection" );
+        // hook the selection events here instead of in the ManifestationCountAggregator c'tor to avoid the "leaking this" warning
+        mSelection.addListener(selectionAggregator);
+		this .selectionAggregator .addListener( new LinearMapTool.Factory( this .mSelection ) );
 
         Symmetry[] symms = field .getSymmetries();
         for (Symmetry symm : symms) {
@@ -706,7 +709,7 @@ public class DocumentModel implements Snapshot .Recorder, UndoableEdit .Context,
                 edit .perform();
                 this .mHistory .mergeSelectionChanges();
                 this .mHistory .addEdit( edit, DocumentModel.this );
-                this .selectionSummary .notifyListeners();
+                this .selectionAggregator .notifyListeners();
             }
         }
         catch ( RuntimeException re )

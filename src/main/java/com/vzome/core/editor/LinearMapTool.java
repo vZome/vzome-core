@@ -12,6 +12,9 @@ import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 
 public class LinearMapTool extends TransformationTool
 {
@@ -49,7 +52,7 @@ public class LinearMapTool extends TransformationTool
 		return true;
 	}
 	
-	public static class Factory implements SelectionSummary.Listener
+	public static class Factory implements PropertyChangeListener
 	{
 		private boolean enabled = false;
 		private final LinearMapTool instance;
@@ -59,19 +62,24 @@ public class LinearMapTool extends TransformationTool
 			this .instance = new LinearMapTool( null, selection, null, null, null );
 		}
 		
-		@Override
-		public void selectionChanged( int total, int balls, int struts, int panels )
-		{
-			boolean wasEnabled = this .enabled;
-			if ( ( total == 7 && balls == 1 && struts == 6 )
-			  || ( total == 4 && balls == 1 && struts == 3 ) )
-				this .enabled = ( null == instance .checkSelection( false ) );
-			else
-				this .enabled = false;
-			if ( wasEnabled != this .enabled )
-				System .out .println( "enabled: " + this .enabled );
-		}
-		
+        @Override
+        public void propertyChange(PropertyChangeEvent evt) {
+            if( evt.getPropertyName().equals("selection.counts") ) {
+                Object newValue = evt.getNewValue();
+                if(newValue instanceof ManifestationCounts ) {
+                    ManifestationCounts counter = ManifestationCounts.class.cast(newValue);
+                    boolean wasEnabled = this .enabled;
+                    if ( counter.balls() <= 1 && counter.panels() == 0 
+                        && ( counter.struts() == 3 || counter.struts() == 6 ) )
+                        this .enabled = ( null == instance .checkSelection( false ) );
+                    else
+                        this .enabled = false;
+                    if ( wasEnabled != this .enabled )
+                        System .out .println( "enabled: " + this .enabled );
+                }
+            }
+        }
+        
 	}
 
     protected String checkSelection( boolean prepareTool )
