@@ -7,9 +7,9 @@ import com.vzome.core.model.Panel;
 import com.vzome.core.model.Strut;
 import com.vzome.core.render.Color;
 
-public class ManifestationCountAggregator extends Aggregator implements ManifestationChanges {
+public class ManifestationCountAggregator extends Aggregator<ManifestationCountAggregator.ManifestationCounts> implements ManifestationChanges {
 
-    public class ManifestationCounts extends Aggregate {
+    public class ManifestationCounts extends Aggregator.Aggregate {
         protected int balls = 0;
         protected int struts = 0;
         protected int panels = 0;
@@ -78,6 +78,45 @@ public class ManifestationCountAggregator extends Aggregator implements Manifest
         }
     }
 
+    protected class ManifestationChangeHandler implements Runnable {
+        private final Class<? extends Manifestation> manifestationClass;
+        private final int delta;
+
+        ManifestationChangeHandler(Class<? extends Manifestation> manClass, int delta) {
+            this.manifestationClass = manClass;
+            this.delta = delta;
+        }
+
+        @Override
+        public void run() {
+            // delta will be either +1 or -1 for add or remove events
+            if ( manifestationClass.equals(Connector.class) )
+                counts.balls += delta;
+            else if ( manifestationClass.equals(Strut.class) )
+                counts.struts += delta;
+            else if ( manifestationClass.equals(Panel.class) )
+                counts.panels += delta;
+            else
+                throw new IllegalStateException("Unknown class: " + manifestationClass.toString());
+            notifyListeners();
+        }
+    }
+
+    protected class BulkChangeHandler implements Runnable {
+        private final ManifestationCounts newCounts;
+
+        BulkChangeHandler(ManifestationCounts newValues) {
+            newCounts = newValues.copy();
+        }
+
+        @Override
+        public void run() {
+            counts = newCounts;
+            notifyListeners();
+        }
+
+    }
+
     private final String name;
     protected ManifestationCounts counts = new ManifestationCounts();
 
@@ -100,39 +139,30 @@ public class ManifestationCountAggregator extends Aggregator implements Manifest
 
     @Override
     public void reset() {
-        counts.balls = 0;
-        counts.struts = 0;
-        counts.panels = 0;
+        preset(new ManifestationCounts());
+    }
+
+    @Override
+    public void preset(ManifestationCounts newCounts) {
+        super.notifyListeners(new BulkChangeHandler(newCounts));
     }
 
     @Override
     public ManifestationCounts getAggregate() {
-        return counts.copy(); // so a caller can't change our data. Keeps us thread-safe too
+        return counts.copy(); // so a caller can't access our instance.
     }
 
     @Override
     public void manifestationAdded(Manifestation m) {
-        if ( m instanceof Connector )
-			counts.balls++;
-		else if ( m instanceof Strut )
-			counts.struts++;
-		else if ( m instanceof Panel )
-			counts.panels++;
-        notifyListeners();
+        super.notifyListeners(new ManifestationChangeHandler(m.getClass(), 1));
     }
 
     @Override
     public void manifestationRemoved(Manifestation m) {
-        if ( m instanceof Connector )
-			counts.balls--;
-		else if ( m instanceof Strut )
-			counts.struts--;
-		else if ( m instanceof Panel )
-			counts.panels--;
-        notifyListeners();
+        super.notifyListeners(new ManifestationChangeHandler(m.getClass(), -1));
     }
 
     @Override
-    public void manifestationColored(Manifestation m, Color color) {} // ignore
+    public void manifestationColored(Manifestation m, Color color) {} // ignored
     
 }
