@@ -25,6 +25,7 @@ import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.Panel;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class ScalingTool extends SymmetryTool
 {    
@@ -36,9 +37,9 @@ public class ScalingTool extends SymmetryTool
 		}
 
 		@Override
-		protected boolean countsAreValid( int total, int balls, int struts, int panels )
+		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			return ( total == 3 && balls == 1 && struts == 2 );
+            return counts.equalTo(1, 2, 0); // balls, struts, panels
 		}
 
 		@Override

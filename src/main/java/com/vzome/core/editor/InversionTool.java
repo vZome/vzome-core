@@ -12,6 +12,7 @@ import com.vzome.core.math.symmetry.Symmetry;
 import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class InversionTool extends TransformationTool
 {
@@ -31,9 +32,9 @@ public class InversionTool extends TransformationTool
 		}
 
 		@Override
-		protected boolean countsAreValid( int total, int balls, int struts, int panels )
+		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			return ( total == 1 && balls == 1 );
+			return counts.equalTo(1, 0, 0); // balls, struts, panels
 		}
 
 		@Override

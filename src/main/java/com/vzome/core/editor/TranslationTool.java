@@ -15,6 +15,7 @@ import com.vzome.core.construction.Transformation;
 import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class TranslationTool extends TransformationTool
 {
@@ -32,9 +33,9 @@ public class TranslationTool extends TransformationTool
 		}
 
 		@Override
-		protected boolean countsAreValid( int total, int balls, int struts, int panels )
+		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			return ( total == 2 && balls == 2 );
+            return counts.equalTo(0, 2, 0); // balls, struts, panels
 		}
 
 		@Override

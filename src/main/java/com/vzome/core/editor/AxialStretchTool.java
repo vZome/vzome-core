@@ -24,6 +24,7 @@ import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.Panel;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class AxialStretchTool extends TransformationTool
 {
@@ -41,9 +42,9 @@ public class AxialStretchTool extends TransformationTool
 		}
 
 		@Override
-		protected boolean countsAreValid( int total, int balls, int struts, int panels )
+		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			return ( total == 2 && balls == 1 && struts == 1 );
+			return counts.equalTo(1, 1, 0); // balls, struts, panels
 		}
 
 		@Override

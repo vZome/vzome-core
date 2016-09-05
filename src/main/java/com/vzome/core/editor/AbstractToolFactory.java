@@ -4,8 +4,9 @@ import java.beans.PropertyChangeListener;
 import java.beans.PropertyChangeSupport;
 
 import com.vzome.core.editor.UndoableEdit.Context;
-import com.vzome.core.math.symmetry.Symmetry;
 import com.vzome.core.model.RealizedModel;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
+import java.beans.PropertyChangeEvent;
 
 public abstract class AbstractToolFactory implements ToolFactory
 {
@@ -19,20 +20,38 @@ public abstract class AbstractToolFactory implements ToolFactory
 		this.model = model;
 		this.context = context;
 		this .pcs = new PropertyChangeSupport( this );
-		model .addSelectionSummaryListener( new SelectionSummary.Listener()
+		model .addSelectionSummaryListener( new PropertyChangeListener()
 		{
-			@Override
-			public void selectionChanged( int total, int balls, int struts, int panels )
-			{
-				boolean wasEnabled = enabled;
-				if ( countsAreValid( total, balls, struts, panels ) )
-					enabled = bindParameters( model .getSelection(), model .getSymmetrySystem() );
-				else
-					enabled = false;
-				if ( wasEnabled != enabled )
-					pcs .firePropertyChange( "enabled", wasEnabled, enabled );
-			}
-		} );
+			
+//			public void selectionChanged( int total, int balls, int struts, int panels )
+//			{
+//				boolean wasEnabled = enabled;
+//				if ( countsAreValid( total, balls, struts, panels ) )
+//					enabled = bindParameters( model .getSelection(), model .getSymmetrySystem() );
+//				else
+//					enabled = false;
+//				if ( wasEnabled != enabled )
+//					pcs .firePropertyChange( "enabled", wasEnabled, enabled );
+//			}
+//
+            @Override
+            public void propertyChange(PropertyChangeEvent evt) {
+                if( evt.getPropertyName().equals("selection.counts") ) {
+                    Object newValue = evt.getNewValue();
+                    if(newValue instanceof ManifestationCounts ) {
+                        ManifestationCounts counts = ManifestationCounts.class.cast(newValue);
+                        boolean wasEnabled = enabled;
+                        if ( countsAreValid( counts ) )
+                            enabled = bindParameters( model .getSelection(), model .getSymmetrySystem() );
+                        else
+                            enabled = false;
+
+                        if ( wasEnabled != enabled )
+                            pcs .firePropertyChange( "enabled", wasEnabled, enabled );
+                    }
+                }
+            }
+        });
 	}
 
 	protected Selection getSelection()
@@ -67,7 +86,7 @@ public abstract class AbstractToolFactory implements ToolFactory
 	
 	protected abstract Tool createToolInternal( int index );
 
-	protected abstract boolean countsAreValid( int total, int balls, int struts, int panels );
+	protected abstract boolean countsAreValid( ManifestationCounts counts );
 	
 	protected abstract boolean bindParameters( Selection selection, SymmetrySystem symmetry );
 }

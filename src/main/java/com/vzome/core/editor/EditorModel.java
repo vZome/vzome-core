@@ -11,6 +11,8 @@ import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
+import com.vzome.core.monitor.ManifestationCountAggregator;
+import java.beans.PropertyChangeListener;
 
 public class EditorModel
 {
@@ -21,7 +23,8 @@ public class EditorModel
         this.oldGroups = oldGroups;
 		this.symmetrySystem = symmetrySystem;
         
-		this .selectionSummary = new SelectionSummary( this .mSelection );
+		this .selectionSummary = new ManifestationCountAggregator("selection");
+        this .mSelection.addListener(selectionSummary);
 
         Manifestation m = realized .manifest( originPoint );
         m .addConstruction( originPoint );
@@ -30,7 +33,7 @@ public class EditorModel
         mCenterPoint = originPoint;
     }
     
-    public void addSelectionSummaryListener( SelectionSummary.Listener listener )
+    public void addSelectionSummaryListener( PropertyChangeListener listener )
     {
     	this .selectionSummary .addListener( listener );
     }
@@ -130,7 +133,7 @@ public class EditorModel
 
     protected Selection mSelection;
 
-	private SelectionSummary selectionSummary;
+	private final ManifestationCountAggregator selectionSummary;
 
     private Point mCenterPoint;
     

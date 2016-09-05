@@ -1,6 +1,7 @@
 package com.vzome.core.editor;
 
 import com.vzome.core.math.symmetry.IcosahedralSymmetry;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class IcosahedralToolFactory extends AbstractToolFactory implements ToolFactory
 {
@@ -13,9 +14,9 @@ public class IcosahedralToolFactory extends AbstractToolFactory implements ToolF
 	}
 
 	@Override
-	protected boolean countsAreValid( int total, int balls, int struts, int panels )
+	protected boolean countsAreValid( ManifestationCounts counts )
 	{
-		return ( total == 1 && balls == 1 );
+        return counts.equalTo(1, 0, 0); // balls, struts, panels
 	}
 
 	@Override

@@ -12,6 +12,7 @@ import com.vzome.core.model.Connector;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
 import com.vzome.core.model.Strut;
+import com.vzome.core.monitor.ManifestationCountAggregator.ManifestationCounts;
 
 public class LinearMapTool extends TransformationTool
 {
@@ -25,10 +26,13 @@ public class LinearMapTool extends TransformationTool
 		}
 
 		@Override
-		protected boolean countsAreValid( int total, int balls, int struts, int panels )
+		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			return ( total == 7 && balls == 1 && struts == 6 )
-				|| ( total == 4 && balls == 1 && struts == 3 );
+			if( counts.balls() <= 1 // 0 or 1
+                    && counts.panels() == 0
+                    && ( counts.struts() == 3 || counts.struts() == 6 ) )
+                return true;
+            return false;
 		}
 
 		@Override
@@ -103,13 +107,13 @@ public class LinearMapTool extends TransformationTool
                     correct = false;
                     break;
                 }
-                if ( index / 3 == 0 )
+                if ( index < 3 )
                 {
-                    oldBasis[ index % 3 ] = (Segment) man .getConstructions() .next();
+                    oldBasis[ index ] = (Segment) man .getConstructions() .next();
                 }
                 else
                 {
-                    newBasis[ index % 3 ] = (Segment) man .getConstructions() .next();
+                    newBasis[ index - 3 ] = (Segment) man .getConstructions() .next();
                 }
                 ++index;
             }
@@ -119,12 +123,14 @@ public class LinearMapTool extends TransformationTool
         if ( !correct )
             return "linear map tool requires three adjacent, non-parallel struts (or two sets of three) and a single (optional) center ball";
 
+        // TODO validate adjacency of the three struts of each basis before we declare it all correct
+        // TODO validate linear independence of oldBasis before we declare it all correct
+
         if ( prepareTool ) {
         	if ( center == null )
         		center = this.originPoint;
         	this .transforms = new Transformation[ 1 ];
         	if ( index == 6 )
-                // TODO validate linear independence of oldBasis
         		transforms[ 0 ] = new ChangeOfBasis( oldBasis, newBasis, center );
         	else
         		transforms[ 0 ] = new ChangeOfBasis( oldBasis[ 0 ], oldBasis[ 1 ], oldBasis[ 2 ], center, originalScaling );
