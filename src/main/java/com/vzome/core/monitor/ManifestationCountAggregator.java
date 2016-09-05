@@ -102,7 +102,6 @@ public class ManifestationCountAggregator extends Aggregator<ManifestationCountA
                 counts.panels += delta;
             else
                 throw new IllegalStateException("Unknown class: " + manifestationClass.toString());
-            notifyListeners();
         }
     }
 
@@ -116,7 +115,6 @@ public class ManifestationCountAggregator extends Aggregator<ManifestationCountA
         @Override
         public void run() {
             counts = newCounts;
-            notifyListeners();
         }
 
     }

@@ -28,11 +28,9 @@ public class LinearMapTool extends TransformationTool
 		@Override
 		protected boolean countsAreValid( ManifestationCounts counts )
 		{
-			if( counts.balls() <= 1 // 0 or 1
+			return counts.balls() <= 1 // 0 or 1
                     && counts.panels() == 0
-                    && ( counts.struts() == 3 || counts.struts() == 6 ) )
-                return true;
-            return false;
+                    && ( counts.struts() == 3 || counts.struts() == 6 );
 		}
 
 		@Override
