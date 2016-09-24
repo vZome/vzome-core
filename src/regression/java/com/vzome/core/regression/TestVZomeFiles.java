@@ -235,6 +235,9 @@ public class TestVZomeFiles extends FileSystemVisitor2 .Actor
                         throw new Exception( "ExitValue: " + exitVal );
                     else
                         testHistory .delete();
+                } 
+                else {
+                    System .out .println( "Test skipped. No goldenHistory found at " + goldenHistory .getAbsoluteFile() );
                 }
             } catch ( Exception e ) {
                 Element error = new Element( "error" );
