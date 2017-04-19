@@ -14,6 +14,7 @@ import com.vzome.core.construction.Construction;
 import com.vzome.core.construction.FreePoint;
 import com.vzome.core.model.Manifestation;
 import com.vzome.core.model.RealizedModel;
+import java.util.Objects;
 
 public class BookmarkTool extends ChangeManifestations implements Tool
 {    
@@ -80,6 +81,13 @@ public class BookmarkTool extends ChangeManifestations implements Tool
 		}
 		return true;
 	}
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 79 * hash + Objects.hashCode(this.bookmarkedConstructions);
+        return hash;
+    }
 
 	@Override
 	public boolean isSticky()

@@ -79,6 +79,13 @@ public class LinearMapTool extends TransformationTool
 		return true;
 	}
 
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 29 * hash + (this.originalScaling ? 1 : 0);
+        return hash;
+    }
+
     protected String checkSelection( boolean prepareTool )
     {
         Segment[] oldBasis = new Segment[3];
