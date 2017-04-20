@@ -216,7 +216,14 @@ public class TestVZomeFiles extends FileSystemVisitor2 .Actor
                     } finally {
                         histOut .close();
                     }
-                    Process process = Runtime .getRuntime() .exec( "diff " + goldenHistory .getAbsolutePath() + " " + testHistory .getAbsolutePath() );
+                    // Note that the diff command is not native on Windows,
+                    // but c:\windows\system32\fc.exe can be copied to a folder in the PATH and named diff.exe
+                    // and this test will at least be able to run,
+                    // although the resulting xml file will probably be different than on the Mac
+                    
+                    // Wrap the file names in quotes in case they have embedded spaces
+                    String cmd = "diff \"" + goldenHistory .getAbsolutePath() + "\" \"" + testHistory .getAbsolutePath() + "\"";
+                    Process process = Runtime .getRuntime() .exec( cmd );
                     // any error message?
                     StreamGobbler errorGobbler = new 
                         StreamGobbler( process.getErrorStream(), "ERROR" );            
@@ -235,6 +242,9 @@ public class TestVZomeFiles extends FileSystemVisitor2 .Actor
                         throw new Exception( "ExitValue: " + exitVal );
                     else
                         testHistory .delete();
+                } 
+                else {
+                    System .out .println( "Test skipped. No goldenHistory found at " + goldenHistory .getAbsoluteFile() );
                 }
             } catch ( Exception e ) {
                 Element error = new Element( "error" );
