@@ -5,12 +5,9 @@ package com.vzome.core.editor;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.vecmath.Vector3f;
@@ -51,10 +48,12 @@ import com.vzome.core.kinds.SnubDodecFieldApplication;
 import com.vzome.core.render.Color;
 import com.vzome.core.render.Colors;
 import com.vzome.core.viewing.Lights;
+import java.util.Set;
+import java.util.function.Supplier;
 
 public class Application
 {
-    private final Map<String, FieldApplication> fieldApps = new HashMap<>();
+    private final Map<String, Supplier<FieldApplication> > fieldAppSuppliers = new HashMap<>();
     
     private final Colors mColors;
 
@@ -80,7 +79,6 @@ public class Application
         properties .putAll( loadBuildProperties() );
         
         mColors = new Colors( properties );
-//        File prefsFolder = new File( System.getProperty( "user.home" ), "vZome-Preferences" );
 
         for ( int i = 1; i <= 3; i++ ) {
             Color color = mColors .getColorPref( "light.directional." + i );
@@ -109,10 +107,43 @@ public class Application
         this .exporters .put( "pdb", new PdbExporter( null, this .mColors, this .mLights, null ) );
         this .exporters .put( "seg", new SegExporter( null, this .mColors, this .mLights, null ) );
         this .exporters .put( "ply", new PlyExporter( this .mColors, this .mLights ) );
-        
         this .exporters .put( "history", new HistoryExporter( null, this .mColors, this .mLights, null ) );
+
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        // add all of the parameterless FieldApplication suppliers
+        this.fieldAppSuppliers.put("golden", new Supplier<FieldApplication>() {
+            @Override
+            public FieldApplication get() {
+                return new GoldenFieldApplication();
+            }
+        });
+        this.fieldAppSuppliers.put("rootTwo", new Supplier<FieldApplication>() {
+            @Override
+            public FieldApplication get() {
+                return new RootTwoFieldApplication();
+            }
+        });
+        this.fieldAppSuppliers.put("dodecagon",  // for legacy documents
+        this.fieldAppSuppliers.put("rootThree", new Supplier<FieldApplication>() {
+            @Override
+            public FieldApplication get() {
+                return new RootThreeFieldApplication();
+            }
+        }) );
+        this.fieldAppSuppliers.put("heptagon", new Supplier<FieldApplication>() {
+            @Override
+            public FieldApplication get() {
+                return new HeptagonFieldApplication();
+            }
+        });
+        this.fieldAppSuppliers.put("snubDodec", new Supplier<FieldApplication>() {
+            @Override
+            public FieldApplication get() {
+                return new SnubDodecFieldApplication();
+            }
+        });
     }
-    
+
     public DocumentModel loadDocument( InputStream bytes ) throws Exception
     {
         Document xml = null;
@@ -185,47 +216,16 @@ public class Application
 
 	public FieldApplication getDocumentKind( String name )
 	{
-		// This is lazy, so we don't initialize anything the user doesn't need.
-		
-        FieldApplication kind = fieldApps .get( name );
-        if ( kind == null ) {
-        	switch ( name ) {
-
-        	case "golden":
-		        kind = new GoldenFieldApplication();
-				break;
-
-        	case "rootTwo":
-		        kind = new RootTwoFieldApplication();
-				break;
-
-        	case "rootThree":
-		        kind = new RootThreeFieldApplication();
-		        fieldApps .put( "dodecagon", kind ); // for legacy documents
-				break;
-
-        	case "heptagon":
-		        kind = new HeptagonFieldApplication();
-				break;
-
-        	case "snubDodec":
-		        kind = new SnubDodecFieldApplication();
-				break;
-
-			default:
-				return null;
-			}
-            fieldApps .put( kind .getName(), kind );
+        Supplier<FieldApplication> supplier = fieldAppSuppliers.get(name);
+        if( supplier != null ) {
+            return supplier.get();
         }
-        
-		return kind;
+        return null;
 	}
 
 	public Set<String> getFieldNames()
 	{
-		// Cannot get the keyset from fieldApps, since we are being lazy in constructing that.
-		
-		return new HashSet( Arrays.asList( "golden", "rootTwo", "rootThree", "heptagon", "snubDodec" ) );
+        return this.fieldAppSuppliers.keySet();
 	}
 
 	public static Properties loadDefaults()
