@@ -138,37 +138,13 @@ public class Application
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // add all of the parameterless FieldApplication suppliers
-        this.fieldAppSuppliers.put("golden", new Supplier<FieldApplication>() {
-            @Override
-            public FieldApplication get() {
-                return new GoldenFieldApplication();
-            }
-        });
-        this.fieldAppSuppliers.put("rootTwo", new Supplier<FieldApplication>() {
-            @Override
-            public FieldApplication get() {
-                return new RootTwoFieldApplication();
-            }
-        });
+        this.fieldAppSuppliers.put("golden", GoldenFieldApplication::new);
+        this.fieldAppSuppliers.put("rootTwo", RootTwoFieldApplication::new);
         this.fieldAppSuppliers.put("dodecagon",  // for legacy documents
-        this.fieldAppSuppliers.put("rootThree", new Supplier<FieldApplication>() {
-            @Override
-            public FieldApplication get() {
-                return new RootThreeFieldApplication();
-            }
-        }) );
-        this.fieldAppSuppliers.put("heptagon", new Supplier<FieldApplication>() {
-            @Override
-            public FieldApplication get() {
-                return new HeptagonFieldApplication();
-            }
-        });
-        this.fieldAppSuppliers.put("snubDodec", new Supplier<FieldApplication>() {
-            @Override
-            public FieldApplication get() {
-                return new SnubDodecFieldApplication();
-            }
-        });
+        this.fieldAppSuppliers.put("rootThree", RootThreeFieldApplication::new)
+        );
+        this.fieldAppSuppliers.put("heptagon", HeptagonFieldApplication::new);
+        this.fieldAppSuppliers.put("snubDodec", SnubDodecFieldApplication::new);
 
         // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         // Now add all of the parameterized FieldApplication functions
