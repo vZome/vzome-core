@@ -49,11 +49,38 @@ import com.vzome.core.render.Color;
 import com.vzome.core.render.Colors;
 import com.vzome.core.viewing.Lights;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Application
 {
+    private abstract class FieldApplicationFunction implements Function<Integer, FieldApplication> {
+        public final int minimum;
+        public final int maximum;
+        public FieldApplicationFunction(int min, int max) {
+            minimum = min;
+            maximum = max;
+        }
+        
+        /**
+         * 
+         * @param operand
+         * @return a FieldApplication. An IllegalArgumentException is thrown if limits are not null and the operand is out of range.
+         * Use (@code apply(operand)) directly to bypass the range checks
+         */
+        public FieldApplication get(Integer operand) {
+            if(operand < minimum) {
+                throw new IllegalArgumentException("operand " + operand + " must be greater than " + minimum);
+            }
+            if(operand > maximum) {
+                throw new IllegalArgumentException("operand " + operand + " must be less than " + maximum);
+            }
+            return apply(operand);
+        }
+    }
+
     private final Map<String, Supplier<FieldApplication> > fieldAppSuppliers = new HashMap<>();
+    private final Map<String, FieldApplicationFunction > fieldAppFunctions = new HashMap<>();
     
     private final Colors mColors;
 
@@ -142,6 +169,28 @@ public class Application
                 return new SnubDodecFieldApplication();
             }
         });
+
+        // %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        // Now add all of the parameterized FieldApplication functions
+        // MAXIMSIDES is somewhat arbitrary,
+        // but the PolygonField multiplierMatrix uses (nSides/2)^3 Integers of memory and would bog down if we allow nSides to be too big.
+        // For now, we'll limit it to MAXIMSIDES to ensure reasonable performance.
+        // If memory consumption or performance of the multiply operation is not an issue,
+        // then the MAXIMSIDES limit could theoretically be lifted.
+        // As a practical matter, this should be plenty.
+//        final int MAXIMSIDES = 30;
+//        this.fieldAppFunctions.put("polygon", new FieldApplicationFunction(PolygonField.MINIMUMSIDES, MAXIMSIDES ) {
+//            @Override
+//            public FieldApplication apply(Integer operand) {
+//                return new PolygonFieldApplication(operand);
+//            }
+//        });
+//        this.fieldAppFunctions.put("sqrt", new FieldApplicationFunction(1, Integer.MAX_VALUE) { // range is any positive integer
+//            @Override
+//            public FieldApplication apply(Integer operand) {
+//                return new SqrtFieldApplication(operand);
+//            }
+//        });
     }
 
     public DocumentModel loadDocument( InputStream bytes ) throws Exception
@@ -216,16 +265,66 @@ public class Application
 
 	public FieldApplication getDocumentKind( String name )
 	{
-        Supplier<FieldApplication> supplier = fieldAppSuppliers.get(name);
-        if( supplier != null ) {
-            return supplier.get();
+        if(name.contains(".")) {
+            // parameterized
+            String[] args = name.split(".", 2);
+            if (args.length == 2) {
+                FieldApplicationFunction function = fieldAppFunctions.get(args[0]);
+                if (function != null) {
+                    // we could use apply() instead of get() if we want to ignore the range tests
+                    return function.get(Integer.parseInt(args[1]));
+                }
+            }
+        } else {
+            // parameterless
+            Supplier<FieldApplication> supplier = fieldAppSuppliers.get(name);
+            if( supplier != null ) {
+                return supplier.get();
+            }
         }
+
+        // TODO: Either log the problem or maybe
+        // throw new IllegalArgumentException("Unknown Application Type " + name);
+        // or both
         return null;
 	}
 
 	public Set<String> getFieldNames()
 	{
-        return this.fieldAppSuppliers.keySet();
+        return fieldAppSuppliers.keySet();
+	}
+
+	public Set<String> getParameterizedFieldNames()
+	{
+        return fieldAppFunctions.keySet();
+	}
+
+    /**
+     *
+     * @param fieldName
+     * @return a String indicating the minimum acceptable value for the FieldApplication's operand.
+     * If (@code fieldName) is not found, then the empty string will be returned,
+     */
+	public String getFieldMinimum(String fieldName)
+	{
+        FieldApplicationFunction factory = fieldAppFunctions.get(fieldName);
+        return (factory == null)
+                ? ""
+                : Integer.toString(factory.minimum);
+	}
+
+    /**
+     *
+     * @param fieldName
+     * @return a String indicating the maximum acceptable value for the FieldApplication's operand.
+     * If (@code fieldName) is not found, then the empty string will be returned,
+     */
+	public String getFieldMaximum(String fieldName)
+	{
+        FieldApplicationFunction factory = fieldAppFunctions.get(fieldName);
+        return (factory == null)
+                ? ""
+                : Integer.toString(factory.maximum);
 	}
 
 	public static Properties loadDefaults()
